@@ -130,9 +130,6 @@
 		border-radius: 8px;
 		padding: 0.45rem 0.55rem;
 	}
-	.highlight {
-		border-color: var(--accent);
-	}
 	pre {
 		white-space: pre-wrap;
 		background: #fff;

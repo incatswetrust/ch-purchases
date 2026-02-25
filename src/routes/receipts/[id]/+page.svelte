@@ -284,6 +284,7 @@
 						<strong>{productName(item.productId)}</strong>
 						<span class="badge">{Number(item.totalPrice).toFixed(2)}</span>
 					</div>
+					<p class="muted">Category: {categoryName(item.categoryId)}</p>
 					<p class="muted">
 						{Number(item.quantity)} {item.unit ?? ''} · unit {Number(item.unitPrice).toFixed(4)}
 					</p>

@@ -95,7 +95,7 @@
 		</button>
 		<div class="stack" class:hidden={!showItemsEditor}>
 			<h3>Items</h3>
-			{#each items as item}
+			{#each items as item, idx}
 				<div class="card stack">
 					<label class="field">
 						<span>Product</span>
@@ -123,27 +123,27 @@
 							required
 						/>
 					</label>
+					{#if categorySuggestionsByIndex[idx]?.length}
+						<div class="suggestions">
+							{#each categorySuggestionsByIndex[idx] as suggestion}
+								<button
+									type="button"
+									onclick={() => {
+										item.categoryId = suggestion.id;
+										item.categoryName = suggestion.name;
+										categorySuggestionsByIndex[idx] = [];
+									}}
+								>
+									{suggestion.name}
+								</button>
+							{/each}
+						</div>
+					{/if}
 					<label class="field">
 						<span>Total price</span>
 						<input type="number" min="0" step="0.01" bind:value={item.totalPrice} />
 					</label>
 				</div>
-				{#if categorySuggestionsByIndex[idx]?.length}
-					<div class="suggestions">
-						{#each categorySuggestionsByIndex[idx] as suggestion}
-							<button
-								type="button"
-								onclick={() => {
-									item.categoryId = suggestion.id;
-									item.categoryName = suggestion.name;
-									categorySuggestionsByIndex[idx] = [];
-								}}
-							>
-								{suggestion.name}
-							</button>
-						{/each}
-					</div>
-				{/if}
 			{/each}
 		</div>
 	</div>

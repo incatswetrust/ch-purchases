@@ -111,5 +111,5 @@ export const shoppingSendSchema = z.object({
 				unit: z.string().trim().max(24).nullable().optional()
 			})
 		)
-		min(1)
+		.min(1)
 });
