@@ -6,27 +6,33 @@
 	import { onMount } from 'svelte';
 
 	let { children, data } = $props();
-	let isMenuOpen = $state(false);
-	let menuRef: HTMLElement | undefined;
+	let menuOpen = $state(false);
+	let menuButtonEl: HTMLButtonElement | undefined;
+	let menuPanelEl: HTMLElement | undefined;
 
 	afterNavigate(() => {
-		isMenuOpen = false;
+		menuOpen = false;
 	});
 
 	onMount(() => {
-		const onDocClick = (event: MouseEvent) => {
-			if (!isMenuOpen) return;
+		const onPointerDown = (event: PointerEvent) => {
+			if (!menuOpen) return;
 			const target = event.target as Node | null;
 			if (!target) return;
-			if (menuRef && !menuRef.contains(target)) {
-				isMenuOpen = false;
-			}
+			if (menuPanelEl?.contains(target)) return;
+			if (menuButtonEl?.contains(target)) return;
+			menuOpen = false;
 		};
-		document.addEventListener('click', onDocClick);
+		document.addEventListener('pointerdown', onPointerDown, { capture: true });
 		return () => {
-			document.removeEventListener('click', onDocClick);
+			document.removeEventListener('pointerdown', onPointerDown, { capture: true });
 		};
 	});
+
+	function toggleMenu(event: MouseEvent) {
+		event.stopPropagation();
+		menuOpen = !menuOpen;
+	}
 
 	async function logout() {
 		await fetch('/api/auth/logout', { method: 'POST' });
@@ -41,24 +47,33 @@
 <div class="app-shell">
 	<header>
 		<a class="brand" href="/">Family Expense Tracker</a>
-		<button class="menu-btn" type="button" onclick={() => (isMenuOpen = !isMenuOpen)}>Menu</button>
-		<nav bind:this={menuRef} class:open={isMenuOpen}>
+		<button
+			bind:this={menuButtonEl}
+			class="menu-btn"
+			type="button"
+			aria-expanded={menuOpen}
+			aria-controls="mobile-menu"
+			onclick={toggleMenu}
+		>
+			Menu
+		</button>
+		<nav id="mobile-menu" bind:this={menuPanelEl} class:open={menuOpen}>
 			{#if data.user}
-				<a href="/dashboard" onclick={() => (isMenuOpen = false)}>Dashboard</a>
-				<a href="/analytics" onclick={() => (isMenuOpen = false)}>Analytics</a>
-				<a href="/lists" onclick={() => (isMenuOpen = false)}>Shopping Lists</a>
+				<a href="/dashboard" onclick={() => (menuOpen = false)}>Dashboard</a>
+				<a href="/analytics" onclick={() => (menuOpen = false)}>Analytics</a>
+				<a href="/lists" onclick={() => (menuOpen = false)}>Shopping Lists</a>
 				<Button variant="secondary" onclick={logout}>Logout</Button>
 			{:else}
-				<a href="/login" onclick={() => (isMenuOpen = false)}>Login</a>
+				<a href="/login" onclick={() => (menuOpen = false)}>Login</a>
 			{/if}
 		</nav>
 	</header>
-	{#if isMenuOpen}
+	{#if menuOpen}
 		<button
 			type="button"
 			class="menu-backdrop"
 			aria-label="Close menu"
-			onclick={() => (isMenuOpen = false)}
+			onclick={() => (menuOpen = false)}
 		></button>
 	{/if}
 	<main class="container">{@render children()}</main>
@@ -78,7 +93,7 @@
 		background: var(--surface);
 		position: sticky;
 		top: 0;
-		z-index: 50;
+		z-index: 60;
 	}
 	.brand {
 		font-weight: 700;
@@ -91,6 +106,8 @@
 		background: var(--surface);
 		border-radius: 10px;
 		padding: 0.45rem 0.7rem;
+		position: relative;
+		z-index: 61;
 	}
 	nav {
 		display: none;
@@ -106,6 +123,7 @@
 		align-items: stretch;
 		gap: 0.5rem;
 		min-width: 180px;
+		z-index: 62;
 	}
 	nav.open {
 		display: flex;
@@ -115,6 +133,7 @@
 		inset: 0;
 		background: rgba(0, 0, 0, 0.1);
 		border: 0;
+		z-index: 40;
 	}
 	nav a {
 		color: var(--primary);

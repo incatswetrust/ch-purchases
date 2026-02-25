@@ -9,7 +9,7 @@
 	let storeId = $state('');
 	let from = $state('');
 	let to = $state('');
-	let showFilters = $state(false);
+	let filtersOpen = $state(false);
 
 	async function loadStores() {
 		const response = await fetch('/api/stores');
@@ -40,20 +40,32 @@
 		{/snippet}
 	</TopBar>
 
-	<button class="btn btnGhost filters-btn" type="button" onclick={() => (showFilters = !showFilters)}>
-		{showFilters ? 'Hide filters' : 'Show filters'}
+	<button
+		class="btn btnGhost filters-btn"
+		type="button"
+		aria-expanded={filtersOpen}
+		aria-controls="dashboard-filters"
+		onclick={() => (filtersOpen = !filtersOpen)}
+	>
+		{filtersOpen ? 'Hide filters' : 'Show filters'}
 	</button>
-	<div class="card row" class:hideMobile={!showFilters}>
-		<Select id="store" label="Store" bind:value={storeId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
-		<label class="field">
-			<span>From</span>
-			<input type="date" bind:value={from} />
-		</label>
-		<label class="field">
-			<span>To</span>
-			<input type="date" bind:value={to} />
-		</label>
-		<Button variant="secondary" onclick={loadReceipts}>Apply filters</Button>
+	<div id="dashboard-filters" class="card filters" class:open={filtersOpen}>
+		<div class="filter-store">
+			<Select id="store" label="Store" bind:value={storeId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
+		</div>
+		<div class="filter-dates">
+			<label class="field">
+				<span>From</span>
+				<input type="date" bind:value={from} />
+			</label>
+			<label class="field">
+				<span>To</span>
+				<input type="date" bind:value={to} />
+			</label>
+		</div>
+		<div class="filter-actions">
+			<Button variant="secondary" onclick={loadReceipts}>Apply filters</Button>
+		</div>
 	</div>
 
 	<div class="mobile-list stack">
@@ -91,18 +103,30 @@
 	.filters-btn {
 		display: block;
 	}
-	.hideMobile {
+	.filters {
 		display: none;
+		gap: 0.6rem;
 	}
-	.card.row.hideMobile,
-	.card.row {
+	.filters.open {
+		display: grid;
+	}
+	.filter-store {
+		min-width: 0;
+	}
+	.filter-dates {
 		display: grid;
 		grid-template-columns: 1fr;
 		gap: 0.6rem;
 	}
-	.card.row :global(.btn) {
+	@media (min-width: 390px) {
+		.filter-dates {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	.filter-actions :global(.btn) {
 		min-height: 40px;
 		padding: 0.45rem 0.8rem;
+		width: 100%;
 	}
 	.receipt-card {
 		text-decoration: none;
@@ -119,19 +143,24 @@
 		.filters-btn {
 			display: none;
 		}
-		.hideMobile {
+		.filters {
 			display: grid;
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			align-items: end;
+		}
+		.filter-dates {
+			grid-column: span 2;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		.filter-actions {
+			display: flex;
+			align-items: end;
 		}
 		.mobile-list {
 			display: none;
 		}
 		.desktop-table {
 			display: block;
-		}
-		.card.row.hideMobile,
-		.card.row {
-			grid-template-columns: repeat(4, minmax(0, 1fr));
-			align-items: end;
 		}
 	}
 </style>
