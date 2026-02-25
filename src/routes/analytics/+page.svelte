@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Table from '$lib/components/Table.svelte';
+	import TopBar from '$lib/components/TopBar.svelte';
 
 	let month = $state(new Date().toISOString().slice(0, 7));
 	let byCategory: Array<{ category: string; total: number }> = $state([]);
@@ -38,8 +39,8 @@
 </script>
 
 <section class="stack">
-	<div class="row" style="justify-content: space-between; align-items: center;">
-		<h1>Analytics</h1>
+	<TopBar title="Analytics" />
+	<div class="card">
 		<label class="field">
 			<span>Month</span>
 			<input type="month" bind:value={month} onchange={loadData} />
@@ -48,26 +49,52 @@
 
 	<div class="card stack">
 		<h2>Totals by category</h2>
-		<Table headers={['Category', 'Total']}>
+		<div class="mobile-bars stack">
 			{#each byCategory as row}
-				<tr>
-					<td>{row.category}</td>
-					<td>{row.total.toFixed(2)}</td>
-				</tr>
+				<div class="bar-row">
+					<div class="row" style="justify-content: space-between;">
+						<span>{row.category}</span>
+						<strong>{row.total.toFixed(2)}</strong>
+					</div>
+					<div class="bar"><div style={`width:${Math.min(100, row.total)}%`}></div></div>
+				</div>
 			{/each}
-		</Table>
+		</div>
+		<div class="desktop-table">
+			<Table headers={['Category', 'Total']}>
+				{#each byCategory as row}
+					<tr>
+						<td>{row.category}</td>
+						<td>{row.total.toFixed(2)}</td>
+					</tr>
+				{/each}
+			</Table>
+		</div>
 	</div>
 
 	<div class="card stack">
 		<h2>Totals by store</h2>
-		<Table headers={['Store', 'Total']}>
+		<div class="mobile-bars stack">
 			{#each byStore as row}
-				<tr>
-					<td>{row.store}</td>
-					<td>{row.total.toFixed(2)}</td>
-				</tr>
+				<div class="bar-row">
+					<div class="row" style="justify-content: space-between;">
+						<span>{row.store}</span>
+						<strong>{row.total.toFixed(2)}</strong>
+					</div>
+					<div class="bar"><div style={`width:${Math.min(100, row.total)}%`}></div></div>
+				</div>
 			{/each}
-		</Table>
+		</div>
+		<div class="desktop-table">
+			<Table headers={['Store', 'Total']}>
+				{#each byStore as row}
+					<tr>
+						<td>{row.store}</td>
+						<td>{row.total.toFixed(2)}</td>
+					</tr>
+				{/each}
+			</Table>
+		</div>
 	</div>
 
 	<div class="card stack">
@@ -95,5 +122,28 @@
 		border: 1px solid #cbd5e1;
 		border-radius: 8px;
 		padding: 0.5rem;
+	}
+	.bar {
+		width: 100%;
+		height: 10px;
+		background: #fff;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		overflow: hidden;
+	}
+	.bar > div {
+		height: 100%;
+		background: var(--primary);
+	}
+	.desktop-table {
+		display: none;
+	}
+	@media (min-width: 768px) {
+		.desktop-table {
+			display: block;
+		}
+		.mobile-bars {
+			display: none;
+		}
 	}
 </style>

@@ -2,12 +2,14 @@
 	import Button from '$lib/components/Button.svelte';
 	import Table from '$lib/components/Table.svelte';
 	import Select from '$lib/components/Select.svelte';
+	import TopBar from '$lib/components/TopBar.svelte';
 
 	let receipts: any[] = $state([]);
 	let stores: any[] = $state([]);
 	let storeId = $state('');
 	let from = $state('');
 	let to = $state('');
+	let showFilters = $state(false);
 
 	async function loadStores() {
 		const response = await fetch('/api/stores');
@@ -32,12 +34,16 @@
 </script>
 
 <section class="stack">
-	<div class="row" style="justify-content: space-between; align-items: center;">
-		<h1>Dashboard</h1>
-		<a href="/receipts/new"><Button>New receipt</Button></a>
-	</div>
+	<TopBar title="Dashboard">
+		{#snippet actions()}
+			<a href="/receipts/new"><Button>Create</Button></a>
+		{/snippet}
+	</TopBar>
 
-	<div class="card row">
+	<button class="btn btnGhost filters-btn" type="button" onclick={() => (showFilters = !showFilters)}>
+		{showFilters ? 'Hide filters' : 'Show filters'}
+	</button>
+	<div class="card row" class:hideMobile={!showFilters}>
 		<Select id="store" label="Store" bind:value={storeId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
 		<label class="field">
 			<span>From</span>
@@ -50,16 +56,30 @@
 		<Button variant="secondary" onclick={loadReceipts}>Apply filters</Button>
 	</div>
 
-	<Table headers={['Date', 'Store', 'Total', 'Actions']}>
+	<div class="mobile-list stack">
 		{#each receipts as receipt}
-			<tr>
-				<td>{new Date(receipt.purchasedAt).toLocaleString()}</td>
-				<td>{receipt.storeName}</td>
-				<td>{Number(receipt.total).toFixed(2)}</td>
-				<td><a href={`/receipts/${receipt.id}`}>Open</a></td>
-			</tr>
+			<a class="card receipt-card" href={`/receipts/${receipt.id}`}>
+				<div class="row" style="justify-content: space-between; align-items: center;">
+					<strong>{receipt.storeName}</strong>
+					<span class="badge">{Number(receipt.total).toFixed(2)}</span>
+				</div>
+				<p class="muted">{new Date(receipt.purchasedAt).toLocaleString()}</p>
+			</a>
 		{/each}
-	</Table>
+	</div>
+
+	<div class="desktop-table">
+		<Table headers={['Date', 'Store', 'Total', 'Actions']}>
+			{#each receipts as receipt}
+				<tr>
+					<td>{new Date(receipt.purchasedAt).toLocaleString()}</td>
+					<td>{receipt.storeName}</td>
+					<td>{Number(receipt.total).toFixed(2)}</td>
+					<td><a href={`/receipts/${receipt.id}`}>Open</a></td>
+				</tr>
+			{/each}
+		</Table>
+	</div>
 </section>
 
 <style>
@@ -68,9 +88,35 @@
 		flex-direction: column;
 		gap: 0.35rem;
 	}
-	input {
-		border: 1px solid #cbd5e1;
-		border-radius: 8px;
-		padding: 0.5rem;
+	.filters-btn {
+		display: block;
+	}
+	.hideMobile {
+		display: none;
+	}
+	.receipt-card {
+		text-decoration: none;
+		color: inherit;
+	}
+	.muted {
+		color: var(--muted);
+		font-size: 0.9rem;
+	}
+	.desktop-table {
+		display: none;
+	}
+	@media (min-width: 768px) {
+		.filters-btn {
+			display: none;
+		}
+		.hideMobile {
+			display: flex;
+		}
+		.mobile-list {
+			display: none;
+		}
+		.desktop-table {
+			display: block;
+		}
 	}
 </style>

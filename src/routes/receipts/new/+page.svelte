@@ -2,6 +2,8 @@
 	import Button from '$lib/components/Button.svelte';
 	import Select from '$lib/components/Select.svelte';
 	import Input from '$lib/components/Input.svelte';
+	import TopBar from '$lib/components/TopBar.svelte';
+	import BottomBar from '$lib/components/BottomBar.svelte';
 
 	let stores: Array<{ id: string; name: string }> = $state([]);
 	let products: Array<{ id: string; name: string }> = $state([]);
@@ -11,6 +13,7 @@
 	let note = $state('');
 	let items = $state([{ productName: '', quantity: 1, unit: 'pcs', totalPrice: 0 }]);
 	let errorMessage = $state('');
+	let showItemsEditor = $state(false);
 
 	async function loadStores() {
 		const [storesRes, productsRes] = await Promise.all([fetch('/api/stores'), fetch('/api/products')]);
@@ -56,7 +59,7 @@
 </script>
 
 <section class="stack">
-	<h1>New receipt</h1>
+	<TopBar title="New receipt" backHref="/dashboard" />
 	<div class="card stack">
 		<Select id="store" label="Existing store" bind:value={storeId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
 		<Input id="store-name" label="Or type new store" bind:value={storeName} />
@@ -69,10 +72,13 @@
 			<textarea bind:value={note} rows="3"></textarea>
 		</label>
 		{#if errorMessage}<p class="error">{errorMessage}</p>{/if}
-		<div class="stack">
+		<button class="btn btnGhost" type="button" onclick={() => (showItemsEditor = !showItemsEditor)}>
+			{showItemsEditor ? 'Hide items' : 'Add items'}
+		</button>
+		<div class="stack" class:hidden={!showItemsEditor}>
 			<h3>Items</h3>
-			{#each items as item, idx}
-				<div class="row">
+			{#each items as item}
+				<div class="card stack">
 					<label class="field">
 						<span>Product</span>
 						<input type="text" bind:value={item.productName} list="products" />
@@ -96,12 +102,12 @@
 					</label>
 				</div>
 			{/each}
-			<div class="row">
-				<Button variant="accent" onclick={addRow}>Add item</Button>
-				<Button onclick={createReceipt}>Create receipt</Button>
-			</div>
 		</div>
 	</div>
+	<BottomBar>
+		<Button variant="accent" onclick={addRow}>Add item</Button>
+		<Button onclick={createReceipt}>Create receipt</Button>
+	</BottomBar>
 </section>
 
 <style>
@@ -118,5 +124,8 @@
 	}
 	.error {
 		color: #b91c1c;
+	}
+	.hidden {
+		display: none;
 	}
 </style>

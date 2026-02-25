@@ -3,6 +3,8 @@
 	import Select from '$lib/components/Select.svelte';
 	import Table from '$lib/components/Table.svelte';
 	import Input from '$lib/components/Input.svelte';
+	import TopBar from '$lib/components/TopBar.svelte';
+	import BottomBar from '$lib/components/BottomBar.svelte';
 
 	let { params } = $props();
 	let receipt: any = $state(null);
@@ -29,6 +31,7 @@
 	let editUnit = $state('');
 	let editTotalPrice = $state(0);
 	let errorMessage = $state('');
+	let showAddItem = $state(false);
 
 	async function loadAll() {
 		const [receiptRes, storesRes, productsRes, categoriesRes] = await Promise.all([
@@ -156,7 +159,7 @@
 </script>
 
 <section class="stack">
-	<h1>Receipt</h1>
+	<TopBar title="Receipt" backHref="/dashboard" />
 	{#if receipt}
 		<div class="card stack">
 			<h2>Receipt details</h2>
@@ -171,13 +174,18 @@
 				<textarea bind:value={note} rows="3"></textarea>
 			</label>
 			<div class="row">
-				<Button onclick={saveReceipt}>Save receipt</Button>
 				<Button variant="danger" onclick={deleteReceipt}>Delete receipt</Button>
 			</div>
 		</div>
 
 		<div class="card stack">
-			<h2>Add item</h2>
+			<div class="row" style="justify-content: space-between; align-items: center;">
+				<h2>Add item</h2>
+				<Button variant="accent" onclick={() => (showAddItem = !showAddItem)}>
+					{showAddItem ? 'Close' : 'Add item'}
+				</Button>
+			</div>
+			<div class:hidden={!showAddItem} class="stack">
 			<Select id="product" label="Existing product" bind:value={newProductId} options={products.map((p) => ({ value: p.id, label: p.name }))} />
 			<Input id="new-product" label="Or create product name" bind:value={newProductName} />
 			<Select id="category" label="Category" bind:value={newCategoryId} options={categories.map((c) => ({ value: c.id, label: c.name }))} />
@@ -194,8 +202,10 @@
 			</div>
 			{#if errorMessage}<p class="error">{errorMessage}</p>{/if}
 			<Button onclick={addItem}>Add item</Button>
+			</div>
 		</div>
 
+		<div class="desktop-table">
 		<Table headers={['Product', 'Category', 'Qty', 'Unit', 'Total', 'Unit price', 'Actions']}>
 			{#each items as item}
 				<tr>
@@ -212,6 +222,24 @@
 				</tr>
 			{/each}
 		</Table>
+		</div>
+		<div class="mobile-items stack">
+			{#each items as item}
+				<div class="card stack">
+					<div class="row" style="justify-content: space-between; align-items: center;">
+						<strong>{productName(item.productId)}</strong>
+						<span class="badge">{Number(item.totalPrice).toFixed(2)}</span>
+					</div>
+					<p class="muted">
+						{Number(item.quantity)} {item.unit ?? ''} · unit {Number(item.unitPrice).toFixed(4)}
+					</p>
+					<div class="row">
+						<Button variant="secondary" onclick={() => startEdit(item)}>Edit</Button>
+						<Button variant="danger" onclick={() => deleteItem(item.id)}>Delete</Button>
+					</div>
+				</div>
+			{/each}
+		</div>
 
 		{#if editItemId}
 			<div class="card stack">
@@ -235,6 +263,9 @@
 				</div>
 			</div>
 		{/if}
+		<BottomBar>
+			<Button onclick={saveReceipt}>Save receipt</Button>
+		</BottomBar>
 	{/if}
 </section>
 
@@ -252,5 +283,26 @@
 	}
 	.error {
 		color: #b91c1c;
+	}
+	.hidden {
+		display: none;
+	}
+	.desktop-table {
+		display: none;
+	}
+	.muted {
+		color: var(--muted);
+		font-size: 0.9rem;
+	}
+	@media (min-width: 768px) {
+		.desktop-table {
+			display: block;
+		}
+		.mobile-items {
+			display: none;
+		}
+		.hidden {
+			display: flex;
+		}
 	}
 </style>

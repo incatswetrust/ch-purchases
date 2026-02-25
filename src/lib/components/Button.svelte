@@ -20,28 +20,30 @@
 
 <style>
 	.btn {
+		min-height: 44px;
 		padding: 0.55rem 0.95rem;
-		border-radius: 8px;
+		border-radius: 10px;
 		border: 1px solid transparent;
 		cursor: pointer;
 		font-size: 0.95rem;
+		font-weight: 600;
 	}
 	.btn:focus-visible {
-		outline: 2px solid #3b82f6;
+		outline: 2px solid var(--primary);
 		outline-offset: 2px;
 	}
 	.primary {
-		background: #6f8f72;
+		background: var(--primary);
 		color: #fff;
 	}
 	.accent {
-		background: #f2a65a;
+		background: var(--accent);
 		color: #fff;
 	}
 	.secondary {
-		background: #fff;
-		border-color: #bfc6c4;
-		color: #0f172a;
+		background: var(--surface);
+		border-color: var(--border);
+		color: var(--text);
 	}
 	.danger {
 		background: #dc2626;

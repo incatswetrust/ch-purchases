@@ -1,5 +1,7 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
+	import TopBar from '$lib/components/TopBar.svelte';
+	import BottomBar from '$lib/components/BottomBar.svelte';
 
 	type ItemDraft = {
 		rawName: string;
@@ -66,7 +68,7 @@
 </script>
 
 <section class="stack">
-	<h1>Shopping List</h1>
+	<TopBar title="Shopping List" />
 	<div class="card stack">
 		<label class="field">
 			<span>Title</span>
@@ -97,27 +99,29 @@
 				</div>
 			</div>
 		{/each}
-		<div class="row">
-			<Button variant="accent" onclick={addItem}>Add item</Button>
-			<Button onclick={saveList}>Save list</Button>
-			<Button variant="secondary" onclick={optimizeList} disabled={!listId}>Optimize shopping</Button>
-		</div>
 	</div>
+	<BottomBar>
+		<Button variant="accent" onclick={addItem}>Add item</Button>
+		<Button onclick={saveList}>Save list</Button>
+		<Button variant="secondary" onclick={optimizeList} disabled={!listId}>Optimize shopping</Button>
+	</BottomBar>
 
 	{#if optimize}
 		<div class="card stack">
 			<h2>Optimized by store</h2>
 			{#each optimize.stores as store}
-				<div class="card stack">
-					<h3>{store.storeName}</h3>
-					{#each store.items as item}
-						<p>{item.name}</p>
-					{/each}
-				</div>
+				<details class="card stack">
+					<summary><strong>{store.storeName}</strong></summary>
+					<div class="stack">
+						{#each store.items as item}
+							<p>{item.name}</p>
+						{/each}
+					</div>
+				</details>
 			{/each}
 
 			{#if optimize.unknown.length}
-				<div class="card stack">
+				<div class="card stack highlight">
 					<h3>Unknown price</h3>
 					{#each optimize.unknown as item}
 						<p>{item.name}</p>
@@ -126,7 +130,7 @@
 			{/if}
 
 			{#if optimize.newItems.length}
-				<div class="card stack">
+				<div class="card stack highlight">
 					<h3>New items</h3>
 					{#each optimize.newItems as item}
 						<p>{item.name}</p>
@@ -152,5 +156,8 @@
 		background: #fff;
 		border-radius: 8px;
 		padding: 0.45rem 0.55rem;
+	}
+	.highlight {
+		border-color: var(--accent);
 	}
 </style>

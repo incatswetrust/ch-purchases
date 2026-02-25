@@ -1,5 +1,6 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
+	import TopBar from '$lib/components/TopBar.svelte';
 
 	let token = $state('');
 	let telegramUrl = $state('');
@@ -37,7 +38,7 @@
 </script>
 
 <section class="stack">
-	<h1>Login</h1>
+	<TopBar title="Login" backHref="/" />
 	<div class="card stack">
 		<p>Authorize through your Telegram bot account.</p>
 		<Button onclick={startAuth} disabled={loading}>
