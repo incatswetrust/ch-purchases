@@ -114,3 +114,25 @@ export const loginTokens = pgTable('login_tokens', {
 	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 	expiresAt: timestamp('expires_at', { withTimezone: true }).notNull()
 });
+
+export const shoppingLists = pgTable('shopping_lists', {
+	id: uuid('id').defaultRandom().primaryKey(),
+	title: text('title').notNull(),
+	createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+});
+
+export const shoppingListItems = pgTable(
+	'shopping_list_items',
+	{
+		id: uuid('id').defaultRandom().primaryKey(),
+		listId: uuid('list_id')
+			.notNull()
+			.references(() => shoppingLists.id, { onDelete: 'cascade' }),
+		productId: uuid('product_id').references(() => products.id, { onDelete: 'set null' }),
+		rawName: text('raw_name').notNull(),
+		quantity: numeric('quantity', { precision: 14, scale: 3 }),
+		unit: text('unit'),
+		createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
+	},
+	(table) => [index('shopping_list_items_list_id_idx').on(table.listId)]
+);

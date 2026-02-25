@@ -9,12 +9,13 @@ import { json } from '@sveltejs/kit';
 export async function GET(event) {
 	requireUser(event);
 	const query = parseQuery(event, productsQuerySchema);
+	const term = query.query ?? query.q;
 	const rows = await db
 		.select()
 		.from(products)
-		.where(query.q ? ilike(products.name, `%${query.q}%`) : undefined)
+		.where(term ? ilike(products.normalizedName, `%${normalizeProductName(term)}%`) : undefined)
 		.orderBy(asc(products.name))
-		.limit(100);
+		.limit(term ? 10 : 100);
 	return json({ data: rows });
 }
 

@@ -1,17 +1,21 @@
 <script lang="ts">
 	import Button from '$lib/components/Button.svelte';
 	import Select from '$lib/components/Select.svelte';
+	import Input from '$lib/components/Input.svelte';
 
 	let stores: Array<{ id: string; name: string }> = $state([]);
+	let products: Array<{ id: string; name: string }> = $state([]);
 	let storeId = $state('');
+	let storeName = $state('');
 	let purchasedAt = $state(new Date().toISOString().slice(0, 16));
 	let note = $state('');
+	let items = $state([{ productName: '', quantity: 1, unit: 'pcs', totalPrice: 0 }]);
 	let errorMessage = $state('');
 
 	async function loadStores() {
-		const response = await fetch('/api/stores');
-		const result = await response.json();
-		stores = result.data ?? [];
+		const [storesRes, productsRes] = await Promise.all([fetch('/api/stores'), fetch('/api/products')]);
+		stores = (await storesRes.json()).data ?? [];
+		products = (await productsRes.json()).data ?? [];
 	}
 
 	async function createReceipt() {
@@ -20,9 +24,18 @@
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({
-				storeId,
+				storeId: storeId || undefined,
+				storeName: storeId ? undefined : storeName || undefined,
 				purchasedAt: new Date(purchasedAt).toISOString(),
-				note: note || null
+				note: note || null,
+				items: items
+					.filter((item) => item.productName.trim())
+					.map((item) => ({
+						productName: item.productName,
+						quantity: Number(item.quantity),
+						unit: item.unit || null,
+						totalPrice: Number(item.totalPrice)
+					}))
 			})
 		});
 		const result = await response.json();
@@ -36,12 +49,17 @@
 	$effect.pre(() => {
 		loadStores();
 	});
+
+	function addRow() {
+		items = [...items, { productName: '', quantity: 1, unit: 'pcs', totalPrice: 0 }];
+	}
 </script>
 
 <section class="stack">
 	<h1>New receipt</h1>
 	<div class="card stack">
-		<Select id="store" label="Store" bind:value={storeId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
+		<Select id="store" label="Existing store" bind:value={storeId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
+		<Input id="store-name" label="Or type new store" bind:value={storeName} />
 		<label class="field">
 			<span>Purchased at</span>
 			<input type="datetime-local" bind:value={purchasedAt} />
@@ -51,7 +69,38 @@
 			<textarea bind:value={note} rows="3"></textarea>
 		</label>
 		{#if errorMessage}<p class="error">{errorMessage}</p>{/if}
-		<Button onclick={createReceipt}>Create</Button>
+		<div class="stack">
+			<h3>Items</h3>
+			{#each items as item, idx}
+				<div class="row">
+					<label class="field">
+						<span>Product</span>
+						<input type="text" bind:value={item.productName} list="products" />
+						<datalist id="products">
+							{#each products as product}
+								<option value={product.name}></option>
+							{/each}
+						</datalist>
+					</label>
+					<label class="field">
+						<span>Quantity</span>
+						<input type="number" min="0.001" step="0.001" bind:value={item.quantity} />
+					</label>
+					<label class="field">
+						<span>Unit</span>
+						<input type="text" bind:value={item.unit} />
+					</label>
+					<label class="field">
+						<span>Total price</span>
+						<input type="number" min="0" step="0.01" bind:value={item.totalPrice} />
+					</label>
+				</div>
+			{/each}
+			<div class="row">
+				<Button variant="accent" onclick={addRow}>Add item</Button>
+				<Button onclick={createReceipt}>Create receipt</Button>
+			</div>
+		</div>
 	</div>
 </section>
 

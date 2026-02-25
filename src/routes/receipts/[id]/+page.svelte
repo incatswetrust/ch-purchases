@@ -12,6 +12,7 @@
 	let categories: any[] = $state([]);
 
 	let storeId = $state('');
+	let newStoreName = $state('');
 	let purchasedAt = $state('');
 	let note = $state('');
 
@@ -55,15 +56,25 @@
 	}
 
 	async function saveReceipt() {
+		let resolvedStoreId = storeId;
+		if (newStoreName.trim()) {
+			const created = await fetch('/api/stores', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({ name: newStoreName.trim() })
+			}).then((res) => res.json());
+			resolvedStoreId = created.data.id;
+		}
 		await fetch(`/api/receipts/${params.id}`, {
 			method: 'PATCH',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({
-				storeId,
+				storeId: resolvedStoreId,
 				purchasedAt: new Date(purchasedAt).toISOString(),
 				note: note || null
 			})
 		});
+		newStoreName = '';
 		await loadAll();
 	}
 
@@ -150,6 +161,7 @@
 		<div class="card stack">
 			<h2>Receipt details</h2>
 			<Select id="store" label="Store" bind:value={storeId} options={stores.map((s) => ({ value: s.id, label: s.name }))} />
+			<Input id="new-store" label="Or type new store" bind:value={newStoreName} />
 			<label class="field">
 				<span>Purchased at</span>
 				<input type="datetime-local" bind:value={purchasedAt} />

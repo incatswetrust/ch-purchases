@@ -22,6 +22,7 @@
 			{#if data.user}
 				<a href="/dashboard">Dashboard</a>
 				<a href="/analytics">Analytics</a>
+				<a href="/lists">Shopping Lists</a>
 				<Button variant="secondary" onclick={logout}>Logout</Button>
 			{:else}
 				<a href="/login">Login</a>
@@ -34,14 +35,14 @@
 <style>
 	.app-shell {
 		min-height: 100vh;
-		background: #f8fafc;
+		background: #e8e2d8;
 	}
 	header {
 		display: flex;
 		justify-content: space-between;
 		align-items: center;
 		padding: 0.85rem 1rem;
-		border-bottom: 1px solid #e2e8f0;
+		border-bottom: 1px solid #bfc6c4;
 		background: #fff;
 	}
 	header > a {
@@ -55,7 +56,7 @@
 		gap: 0.75rem;
 	}
 	nav a {
-		color: #1d4ed8;
+		color: #6f8f72;
 		text-decoration: none;
 	}
 	main {

@@ -4,6 +4,9 @@ import { receiptItems, receipts, stores } from '$lib/server/schema';
 import { requireUser } from '$lib/server/session';
 import { parseJson, parseQuery } from '$lib/server/utils';
 import { receiptCreateSchema, receiptsQuerySchema } from '$lib/server/validation';
+import { getOrCreateProductByName, getOrCreateStoreByName } from '$lib/server/services/catalog';
+import { computeUnitPrice } from '$lib/server/services/receipts';
+import { upsertStoreProductPrice } from '$lib/server/services/prices';
 import { json } from '@sveltejs/kit';
 
 export async function GET(event) {
@@ -39,14 +42,51 @@ export async function GET(event) {
 export async function POST(event) {
 	requireUser(event);
 	const payload = await parseJson(event, receiptCreateSchema);
-	const [created] = await db
-		.insert(receipts)
-		.values({
-			storeId: payload.storeId,
-			purchasedAt: payload.purchasedAt,
-			note: payload.note ?? null
-		})
-		.returning();
+
+	let storeId = payload.storeId;
+	if (!storeId && payload.storeName) {
+		storeId = await getOrCreateStoreByName(payload.storeName);
+	}
+	if (!storeId) {
+		return json(
+			{ error: { code: 'BAD_REQUEST', message: 'Provide storeId or storeName' } },
+			{ status: 400 }
+		);
+	}
+
+	const created = await db.transaction(async (tx) => {
+		const [receipt] = await tx
+			.insert(receipts)
+			.values({
+				storeId,
+				purchasedAt: payload.purchasedAt,
+				note: payload.note ?? null
+			})
+			.returning();
+
+		if (payload.items?.length) {
+			for (const item of payload.items) {
+				const productId = await getOrCreateProductByName(item.productName);
+				const unitPrice = computeUnitPrice(item.quantity, item.totalPrice);
+				await tx.insert(receiptItems).values({
+					receiptId: receipt.id,
+					productId,
+					quantity: item.quantity.toString(),
+					unit: item.unit ?? null,
+					totalPrice: item.totalPrice.toFixed(2),
+					unitPrice,
+					updatedAt: new Date()
+				});
+				await upsertStoreProductPrice(tx, {
+					storeId,
+					productId,
+					unitPrice,
+					lastSeenAt: payload.purchasedAt
+				});
+			}
+		}
+		return receipt;
+	});
 
 	return json({ data: created }, { status: 201 });
 }

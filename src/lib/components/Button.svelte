@@ -8,7 +8,7 @@
 	}: {
 		type?: 'button' | 'submit';
 		disabled?: boolean;
-		variant?: 'primary' | 'secondary' | 'danger';
+		variant?: 'primary' | 'secondary' | 'danger' | 'accent';
 		onclick?: (event: MouseEvent) => void;
 		children?: import('svelte').Snippet;
 	} = $props();
@@ -31,12 +31,16 @@
 		outline-offset: 2px;
 	}
 	.primary {
-		background: #1d4ed8;
+		background: #6f8f72;
+		color: #fff;
+	}
+	.accent {
+		background: #f2a65a;
 		color: #fff;
 	}
 	.secondary {
 		background: #fff;
-		border-color: #cbd5e1;
+		border-color: #bfc6c4;
 		color: #0f172a;
 	}
 	.danger {
