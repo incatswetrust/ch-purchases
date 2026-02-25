@@ -4,7 +4,11 @@ import { receiptItems, receipts, stores } from '$lib/server/schema';
 import { requireUser } from '$lib/server/session';
 import { parseJson, parseQuery } from '$lib/server/utils';
 import { receiptCreateSchema, receiptsQuerySchema } from '$lib/server/validation';
-import { getOrCreateProductByName, getOrCreateStoreByName } from '$lib/server/services/catalog';
+import {
+	getOrCreateCategoryByName,
+	getOrCreateProductByName,
+	getOrCreateStoreByName
+} from '$lib/server/services/catalog';
 import { computeUnitPrice } from '$lib/server/services/receipts';
 import { upsertStoreProductPrice } from '$lib/server/services/prices';
 import { json } from '@sveltejs/kit';
@@ -67,10 +71,18 @@ export async function POST(event) {
 		if (payload.items?.length) {
 			for (const item of payload.items) {
 				const productId = await getOrCreateProductByName(item.productName);
+				let categoryId = item.categoryId ?? null;
+				if (!categoryId && item.categoryName) {
+					categoryId = await getOrCreateCategoryByName(item.categoryName);
+				}
+				if (!categoryId) {
+					throw new Error('Category is required for each item');
+				}
 				const unitPrice = computeUnitPrice(item.quantity, item.totalPrice);
 				await tx.insert(receiptItems).values({
 					receiptId: receipt.id,
 					productId,
+					categoryId,
 					quantity: item.quantity.toString(),
 					unit: item.unit ?? null,
 					totalPrice: item.totalPrice.toFixed(2),

@@ -116,3 +116,31 @@ If you do not use a secret token, remove `secret_token` from request and unset `
 - Telegram: `/api/telegram/webhook`
 - CRUD: `/api/stores`, `/api/categories`, `/api/products`, `/api/receipts`, `/api/receipt-items`
 - Analytics: `/api/analytics`
+- Shopping send: `POST /api/shopping/send`
+
+### Shopping send endpoint
+
+Endpoint:
+
+`POST /api/shopping/send`
+
+Body:
+
+```json
+{
+  "items": [
+    {
+      "rawName": "Milk",
+      "productId": null,
+      "quantity": 1,
+      "unit": "pcs"
+    }
+  ]
+}
+```
+
+Behavior:
+- Resolves cheapest stores when product + price history exist.
+- Falls back to `Unknown / New items` when not resolvable.
+- Sends formatted message to all IDs in `TELEGRAM_ALLOWED_USER_IDS`.
+- Returns message preview and per-recipient delivery results.

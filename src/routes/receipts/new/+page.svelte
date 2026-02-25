@@ -11,9 +11,12 @@
 	let storeName = $state('');
 	let purchasedAt = $state(new Date().toISOString().slice(0, 16));
 	let note = $state('');
-	let items = $state([{ productName: '', quantity: 1, unit: 'pcs', totalPrice: 0 }]);
+	let items = $state([
+		{ productName: '', quantity: 1, unit: 'pcs', totalPrice: 0, categoryId: '', categoryName: '' }
+	]);
 	let errorMessage = $state('');
 	let showItemsEditor = $state(false);
+	let categorySuggestionsByIndex = $state<Record<number, Array<{ id: string; name: string }>>>({});
 
 	async function loadStores() {
 		const [storesRes, productsRes] = await Promise.all([fetch('/api/stores'), fetch('/api/products')]);
@@ -37,7 +40,9 @@
 						productName: item.productName,
 						quantity: Number(item.quantity),
 						unit: item.unit || null,
-						totalPrice: Number(item.totalPrice)
+						totalPrice: Number(item.totalPrice),
+						categoryId: item.categoryId || undefined,
+						categoryName: item.categoryId ? undefined : item.categoryName || undefined
 					}))
 			})
 		});
@@ -54,7 +59,20 @@
 	});
 
 	function addRow() {
-		items = [...items, { productName: '', quantity: 1, unit: 'pcs', totalPrice: 0 }];
+		items = [
+			...items,
+			{ productName: '', quantity: 1, unit: 'pcs', totalPrice: 0, categoryId: '', categoryName: '' }
+		];
+	}
+
+	async function searchCategories(term: string, index: number) {
+		if (!term.trim()) {
+			categorySuggestionsByIndex[index] = [];
+			return;
+		}
+		const response = await fetch(`/api/categories?query=${encodeURIComponent(term)}`);
+		const result = await response.json();
+		categorySuggestionsByIndex[index] = result.data ?? [];
 	}
 </script>
 
@@ -97,10 +115,35 @@
 						<input type="text" bind:value={item.unit} />
 					</label>
 					<label class="field">
+						<span>Category</span>
+						<input
+							type="text"
+							bind:value={item.categoryName}
+							oninput={() => searchCategories(item.categoryName, idx)}
+							required
+						/>
+					</label>
+					<label class="field">
 						<span>Total price</span>
 						<input type="number" min="0" step="0.01" bind:value={item.totalPrice} />
 					</label>
 				</div>
+				{#if categorySuggestionsByIndex[idx]?.length}
+					<div class="suggestions">
+						{#each categorySuggestionsByIndex[idx] as suggestion}
+							<button
+								type="button"
+								onclick={() => {
+									item.categoryId = suggestion.id;
+									item.categoryName = suggestion.name;
+									categorySuggestionsByIndex[idx] = [];
+								}}
+							>
+								{suggestion.name}
+							</button>
+						{/each}
+					</div>
+				{/if}
 			{/each}
 		</div>
 	</div>
@@ -127,5 +170,17 @@
 	}
 	.hidden {
 		display: none;
+	}
+	.suggestions {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+	.suggestions button {
+		text-align: left;
+		border: 1px solid var(--border);
+		background: #fff;
+		border-radius: 8px;
+		padding: 0.45rem 0.55rem;
 	}
 </style>

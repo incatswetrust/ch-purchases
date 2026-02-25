@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { products, stores } from '$lib/server/schema';
+import { categories, products, stores } from '$lib/server/schema';
 import { normalizeProductName } from '$lib/server/validation';
 import { eq, sql } from 'drizzle-orm';
 
@@ -43,6 +43,26 @@ export async function getOrCreateProductByName(name: string): Promise<string> {
 		.values({
 			name: name.trim(),
 			normalizedName: normalized
+		})
+		.returning();
+	return created.id;
+}
+
+export async function getOrCreateCategoryByName(name: string): Promise<string> {
+	const normalized = name.trim().toLowerCase().replace(/\s+/g, ' ');
+	if (!normalized) {
+		throw new Error('Category name is required');
+	}
+
+	const existing = await db.query.categories.findFirst({
+		where: sql`lower(${categories.name}) = ${normalized}`
+	});
+	if (existing) return existing.id;
+
+	const [created] = await db
+		.insert(categories)
+		.values({
+			name: name.trim()
 		})
 		.returning();
 	return created.id;

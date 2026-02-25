@@ -6,10 +6,10 @@ import { parseJson } from '$lib/server/utils';
 import {
 	idParamSchema,
 	normalizeProductName,
-	productCreateSchema,
 	receiptItemCreateSchema
 } from '$lib/server/validation';
 import { addReceiptItem } from '$lib/server/services/receipts';
+import { getOrCreateCategoryByName } from '$lib/server/services/catalog';
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 
@@ -27,6 +27,7 @@ export async function POST(event) {
 	}
 
 	let productId = payload.productId;
+	let categoryId = payload.categoryId ?? null;
 	if (payload.productName) {
 		const normalized = normalizeProductName(payload.productName);
 		const existing = await db.query.products.findFirst({ where: eq(products.normalizedName, normalized) });
@@ -43,11 +44,20 @@ export async function POST(event) {
 			productId = createdProduct.id;
 		}
 	}
+	if (!categoryId && payload.categoryName) {
+		categoryId = await getOrCreateCategoryByName(payload.categoryName);
+	}
+	if (!categoryId) {
+		return json(
+			{ error: { code: 'BAD_REQUEST', message: 'Category is required' } },
+			{ status: 400 }
+		);
+	}
 
 	const created = await addReceiptItem({
 		receiptId: id,
 		productId,
-		categoryId: payload.categoryId ?? null,
+		categoryId,
 		quantity: payload.quantity,
 		unit: payload.unit ?? null,
 		totalPrice: payload.totalPrice

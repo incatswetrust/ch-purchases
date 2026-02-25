@@ -94,6 +94,16 @@
 	.hideMobile {
 		display: none;
 	}
+	.card.row.hideMobile,
+	.card.row {
+		display: grid;
+		grid-template-columns: 1fr;
+		gap: 0.6rem;
+	}
+	.card.row :global(.btn) {
+		min-height: 40px;
+		padding: 0.45rem 0.8rem;
+	}
 	.receipt-card {
 		text-decoration: none;
 		color: inherit;
@@ -110,13 +120,18 @@
 			display: none;
 		}
 		.hideMobile {
-			display: flex;
+			display: grid;
 		}
 		.mobile-list {
 			display: none;
 		}
 		.desktop-table {
 			display: block;
+		}
+		.card.row.hideMobile,
+		.card.row {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			align-items: end;
 		}
 	}
 </style>

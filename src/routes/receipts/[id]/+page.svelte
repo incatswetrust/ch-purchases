@@ -32,6 +32,11 @@
 	let editTotalPrice = $state(0);
 	let errorMessage = $state('');
 	let showAddItem = $state(false);
+	let categoryQuery = $state('');
+	let categorySuggestions: Array<{ id: string; name: string }> = $state([]);
+	let editCategoryName = $state('');
+	let editCategoryQuery = $state('');
+	let editCategorySuggestions: Array<{ id: string; name: string }> = $state([]);
 
 	async function loadAll() {
 		const [receiptRes, storesRes, productsRes, categoriesRes] = await Promise.all([
@@ -83,6 +88,10 @@
 
 	async function addItem() {
 		errorMessage = '';
+		if (!newCategoryId && !categoryQuery.trim()) {
+			errorMessage = 'Category is required';
+			return;
+		}
 		const response = await fetch(`/api/receipts/${params.id}/items`, {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
@@ -90,6 +99,7 @@
 				productId: newProductId || (products[0]?.id ?? ''),
 				productName: newProductName || undefined,
 				categoryId: newCategoryId || null,
+				categoryName: newCategoryId ? undefined : categoryQuery || undefined,
 				quantity: Number(newQty),
 				unit: newUnit || null,
 				totalPrice: Number(newTotalPrice)
@@ -103,6 +113,7 @@
 		newProductId = '';
 		newProductName = '';
 		newCategoryId = '';
+		categoryQuery = '';
 		newQty = 1;
 		newUnit = 'pcs';
 		newTotalPrice = 0;
@@ -118,18 +129,24 @@
 		editItemId = item.id;
 		editProductId = item.productId;
 		editCategoryId = item.categoryId ?? '';
+		editCategoryName = item.categoryId ? categoryName(item.categoryId) : '';
 		editQty = Number(item.quantity);
 		editUnit = item.unit ?? '';
 		editTotalPrice = Number(item.totalPrice);
 	}
 
 	async function saveEdit() {
+		if (!editCategoryId && !editCategoryName.trim()) {
+			errorMessage = 'Category is required';
+			return;
+		}
 		await fetch(`/api/receipt-items/${editItemId}`, {
 			method: 'PATCH',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({
 				productId: editProductId,
 				categoryId: editCategoryId || null,
+				categoryName: editCategoryId ? undefined : editCategoryName || undefined,
 				quantity: Number(editQty),
 				unit: editUnit || null,
 				totalPrice: Number(editTotalPrice)
@@ -137,6 +154,18 @@
 		});
 		editItemId = '';
 		await loadAll();
+	}
+
+	async function searchCategories(term: string, edit = false) {
+		if (!term.trim()) {
+			if (edit) editCategorySuggestions = [];
+			else categorySuggestions = [];
+			return;
+		}
+		const response = await fetch(`/api/categories?query=${encodeURIComponent(term)}`);
+		const result = await response.json();
+		if (edit) editCategorySuggestions = result.data ?? [];
+		else categorySuggestions = result.data ?? [];
 	}
 
 	async function deleteReceipt() {
@@ -189,6 +218,31 @@
 			<Select id="product" label="Existing product" bind:value={newProductId} options={products.map((p) => ({ value: p.id, label: p.name }))} />
 			<Input id="new-product" label="Or create product name" bind:value={newProductName} />
 			<Select id="category" label="Category" bind:value={newCategoryId} options={categories.map((c) => ({ value: c.id, label: c.name }))} />
+			<label class="field">
+				<span>Or type new category</span>
+				<input
+					type="text"
+					bind:value={categoryQuery}
+					oninput={() => searchCategories(categoryQuery)}
+					placeholder="Type category name"
+				/>
+			</label>
+			{#if categorySuggestions.length}
+				<div class="suggestions">
+					{#each categorySuggestions as suggestion}
+						<button
+							type="button"
+							onclick={() => {
+								newCategoryId = suggestion.id;
+								categoryQuery = suggestion.name;
+								categorySuggestions = [];
+							}}
+						>
+							{suggestion.name}
+						</button>
+					{/each}
+				</div>
+			{/if}
 			<div class="row">
 				<label class="field">
 					<span>Quantity</span>
@@ -246,6 +300,31 @@
 				<h2>Edit item</h2>
 				<Select id="edit-product" label="Product" bind:value={editProductId} options={products.map((p) => ({ value: p.id, label: p.name }))} />
 				<Select id="edit-category" label="Category" bind:value={editCategoryId} options={categories.map((c) => ({ value: c.id, label: c.name }))} />
+				<label class="field">
+					<span>Or type new category</span>
+					<input
+						type="text"
+						bind:value={editCategoryName}
+						oninput={() => searchCategories(editCategoryName, true)}
+						placeholder="Type category name"
+					/>
+				</label>
+				{#if editCategorySuggestions.length}
+					<div class="suggestions">
+						{#each editCategorySuggestions as suggestion}
+							<button
+								type="button"
+								onclick={() => {
+									editCategoryId = suggestion.id;
+									editCategoryName = suggestion.name;
+									editCategorySuggestions = [];
+								}}
+							>
+								{suggestion.name}
+							</button>
+						{/each}
+					</div>
+				{/if}
 				<div class="row">
 					<label class="field">
 						<span>Quantity</span>
@@ -293,6 +372,18 @@
 	.muted {
 		color: var(--muted);
 		font-size: 0.9rem;
+	}
+	.suggestions {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+	}
+	.suggestions button {
+		text-align: left;
+		border: 1px solid var(--border);
+		background: #fff;
+		border-radius: 8px;
+		padding: 0.45rem 0.55rem;
 	}
 	@media (min-width: 768px) {
 		.desktop-table {

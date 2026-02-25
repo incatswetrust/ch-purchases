@@ -12,11 +12,12 @@
 	};
 
 	let title = $state('Weekly shopping');
-	let listId = $state('');
 	let items: ItemDraft[] = $state([
 		{ rawName: '', productId: null, quantity: null, unit: null, suggestions: [] }
 	]);
-	let optimize = $state<{ stores: any[]; unknown: any[]; newItems: any[] } | null>(null);
+	let messagePreview = $state('');
+	let deliveryResults = $state<Array<{ telegramId: string; ok: boolean; error?: string }>>([]);
+	let sending = $state(false);
 
 	async function autocomplete(index: number) {
 		const term = items[index].rawName.trim();
@@ -39,41 +40,33 @@
 		items = [...items, { rawName: '', productId: null, quantity: null, unit: null, suggestions: [] }];
 	}
 
-	async function saveList() {
-		const response = await fetch('/api/lists', {
+	async function sendToTelegram() {
+		sending = true;
+		const response = await fetch('/api/shopping/send', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({
-				title,
 				items: items
 					.filter((item) => item.rawName.trim())
 					.map((item) => ({
-						productId: item.productId,
 						rawName: item.rawName,
+						productId: item.productId,
 						quantity: item.quantity,
 						unit: item.unit
 					}))
 			})
 		});
 		const result = await response.json();
-		listId = result.data.id;
-	}
-
-	async function optimizeList() {
-		if (!listId) return;
-		const response = await fetch(`/api/lists/${listId}/optimize`);
-		const result = await response.json();
-		optimize = result.data;
+		sending = false;
+		messagePreview = result.message ?? '';
+		deliveryResults = result.deliveries ?? [];
 	}
 </script>
 
 <section class="stack">
 	<TopBar title="Shopping List" />
 	<div class="card stack">
-		<label class="field">
-			<span>Title</span>
-			<input bind:value={title} />
-		</label>
+		<p class="badge">{title}</p>
 		{#each items as item, index}
 			<div class="card stack item-row">
 				<label class="field">
@@ -102,41 +95,21 @@
 	</div>
 	<BottomBar>
 		<Button variant="accent" onclick={addItem}>Add item</Button>
-		<Button onclick={saveList}>Save list</Button>
-		<Button variant="secondary" onclick={optimizeList} disabled={!listId}>Optimize shopping</Button>
+		<Button variant="accent" onclick={sendToTelegram} disabled={sending}>
+			{sending ? 'Sending...' : 'Send to Telegram'}
+		</Button>
 	</BottomBar>
 
-	{#if optimize}
+	{#if messagePreview}
 		<div class="card stack">
-			<h2>Optimized by store</h2>
-			{#each optimize.stores as store}
-				<details class="card stack">
-					<summary><strong>{store.storeName}</strong></summary>
-					<div class="stack">
-						{#each store.items as item}
-							<p>{item.name}</p>
-						{/each}
-					</div>
-				</details>
+			<h2>Telegram message preview</h2>
+			<pre>{messagePreview}</pre>
+			<h3>Deliveries</h3>
+			{#each deliveryResults as result}
+				<p>
+					{result.telegramId}: {result.ok ? 'ok' : `failed (${result.error ?? 'unknown'})`}
+				</p>
 			{/each}
-
-			{#if optimize.unknown.length}
-				<div class="card stack highlight">
-					<h3>Unknown price</h3>
-					{#each optimize.unknown as item}
-						<p>{item.name}</p>
-					{/each}
-				</div>
-			{/if}
-
-			{#if optimize.newItems.length}
-				<div class="card stack highlight">
-					<h3>New items</h3>
-					{#each optimize.newItems as item}
-						<p>{item.name}</p>
-					{/each}
-				</div>
-			{/if}
 		</div>
 	{/if}
 </section>
@@ -159,5 +132,12 @@
 	}
 	.highlight {
 		border-color: var(--accent);
+	}
+	pre {
+		white-space: pre-wrap;
+		background: #fff;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		padding: 0.65rem;
 	}
 </style>

@@ -1,10 +1,32 @@
 <script lang="ts">
+	import { afterNavigate } from '$app/navigation';
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
 	import Button from '$lib/components/Button.svelte';
+	import { onMount } from 'svelte';
 
 	let { children, data } = $props();
 	let isMenuOpen = $state(false);
+	let menuRef: HTMLElement | undefined;
+
+	afterNavigate(() => {
+		isMenuOpen = false;
+	});
+
+	onMount(() => {
+		const onDocClick = (event: MouseEvent) => {
+			if (!isMenuOpen) return;
+			const target = event.target as Node | null;
+			if (!target) return;
+			if (menuRef && !menuRef.contains(target)) {
+				isMenuOpen = false;
+			}
+		};
+		document.addEventListener('click', onDocClick);
+		return () => {
+			document.removeEventListener('click', onDocClick);
+		};
+	});
 
 	async function logout() {
 		await fetch('/api/auth/logout', { method: 'POST' });
@@ -20,17 +42,25 @@
 	<header>
 		<a class="brand" href="/">Family Expense Tracker</a>
 		<button class="menu-btn" type="button" onclick={() => (isMenuOpen = !isMenuOpen)}>Menu</button>
-		<nav class:open={isMenuOpen}>
+		<nav bind:this={menuRef} class:open={isMenuOpen}>
 			{#if data.user}
-				<a href="/dashboard">Dashboard</a>
-				<a href="/analytics">Analytics</a>
-				<a href="/lists">Shopping Lists</a>
+				<a href="/dashboard" onclick={() => (isMenuOpen = false)}>Dashboard</a>
+				<a href="/analytics" onclick={() => (isMenuOpen = false)}>Analytics</a>
+				<a href="/lists" onclick={() => (isMenuOpen = false)}>Shopping Lists</a>
 				<Button variant="secondary" onclick={logout}>Logout</Button>
 			{:else}
-				<a href="/login">Login</a>
+				<a href="/login" onclick={() => (isMenuOpen = false)}>Login</a>
 			{/if}
 		</nav>
 	</header>
+	{#if isMenuOpen}
+		<button
+			type="button"
+			class="menu-backdrop"
+			aria-label="Close menu"
+			onclick={() => (isMenuOpen = false)}
+		></button>
+	{/if}
 	<main class="container">{@render children()}</main>
 </div>
 
@@ -79,6 +109,12 @@
 	}
 	nav.open {
 		display: flex;
+	}
+	.menu-backdrop {
+		position: fixed;
+		inset: 0;
+		background: rgba(0, 0, 0, 0.1);
+		border: 0;
 	}
 	nav a {
 		color: var(--primary);

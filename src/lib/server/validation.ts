@@ -15,6 +15,9 @@ export const categoryCreateSchema = z.object({
 });
 
 export const categoryUpdateSchema = categoryCreateSchema;
+export const categoriesQuerySchema = z.object({
+	query: z.string().trim().max(120).optional()
+});
 
 export function normalizeProductName(name: string): string {
 	return name.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -42,7 +45,13 @@ export const receiptCreateSchema = z.object({
 				productName: z.string().trim().min(1).max(200),
 				quantity: z.coerce.number().positive(),
 				unit: z.string().trim().max(24).nullable().optional(),
-				totalPrice: z.coerce.number().min(0)
+				totalPrice: z.coerce.number().min(0),
+				categoryId: z.uuid().optional(),
+				categoryName: z.string().trim().min(1).max(120).optional()
+			})
+			.refine((item) => Boolean(item.categoryId || item.categoryName), {
+				message: 'Category is required',
+				path: ['categoryName']
 			})
 		)
 		.optional()
@@ -60,13 +69,19 @@ export const receiptsQuerySchema = z.object({
 	to: z.coerce.date().optional()
 });
 
-export const receiptItemCreateSchema = z.object({
-	productId: z.uuid(),
-	categoryId: z.uuid().nullable().optional(),
-	quantity: z.coerce.number().positive(),
-	unit: z.string().trim().max(24).nullable().optional(),
-	totalPrice: z.coerce.number().min(0)
-});
+export const receiptItemCreateSchema = z
+	.object({
+		productId: z.uuid(),
+		categoryId: z.uuid().nullable().optional(),
+		categoryName: z.string().trim().min(1).max(120).optional(),
+		quantity: z.coerce.number().positive(),
+		unit: z.string().trim().max(24).nullable().optional(),
+		totalPrice: z.coerce.number().min(0)
+	})
+	.refine((item) => Boolean(item.categoryId || item.categoryName), {
+		message: 'Category is required',
+		path: ['categoryName']
+	});
 
 export const receiptItemUpdateSchema = receiptItemCreateSchema;
 
@@ -84,4 +99,17 @@ export const shoppingListCreateSchema = z.object({
 			unit: z.string().trim().max(24).nullable().optional()
 		})
 	)
+});
+
+export const shoppingSendSchema = z.object({
+	items: z
+		.array(
+			z.object({
+				rawName: z.string().trim().min(1).max(200),
+				productId: z.uuid().nullable().optional(),
+				quantity: z.coerce.number().positive().nullable().optional(),
+				unit: z.string().trim().max(24).nullable().optional()
+			})
+		)
+		min(1)
 });
