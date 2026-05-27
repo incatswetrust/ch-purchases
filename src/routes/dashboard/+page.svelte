@@ -36,6 +36,7 @@
 <section class="stack">
 	<TopBar title="Dashboard">
 		{#snippet actions()}
+			<a href="/receipts/scan"><Button variant="secondary">Scan</Button></a>
 			<a href="/receipts/new"><Button>Create</Button></a>
 		{/snippet}
 	</TopBar>

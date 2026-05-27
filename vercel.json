@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "src/routes/api/receipts/scan/+server.ts": {
+      "maxDuration": 300
+    }
+  }
+}
