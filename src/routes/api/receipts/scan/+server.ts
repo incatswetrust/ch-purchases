@@ -8,7 +8,8 @@ import { parseReceiptText } from '$lib/server/receipt-parser/index.js';
 // Fluid Compute + extended timeout for OCR (Node.js runtime required — not Edge).
 export const config: Config = {
 	runtime: 'nodejs22.x',
-	maxDuration: 300
+	maxDuration: 300,
+	memory: 1024
 };
 
 // Max 8 MB raw upload (client compresses before sending, so real-world is <4 MB).
