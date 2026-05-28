@@ -9,16 +9,13 @@
 		price: number;
 		quantity: number;
 		unit: string | null;
-		confidence: 'high' | 'low';
-		rawLine: string;
+		confidence: number; // 0..1 from Document AI
 	};
 
 	type Draft = {
-		store: { name: string | null; confidence: string };
+		store: { name: string | null; confidence: number };
 		items: ParsedItem[];
 		total: number | null;
-		rawText: string;
-		ocrConfidence: number;
 	};
 
 	// ── State ────────────────────────────────────────────────────────────────────
@@ -98,7 +95,7 @@
 		// Pre-fill editable state from draft
 		storeName = draft.store.name ?? '';
 		storeId = '';
-		editableItems = draft.items.map((item) => ({ ...item, categoryName: '' }));
+		editableItems = draft.items.map((item) => ({ ...item, categoryName: '', unit: item.unit ?? null }));
 
 		phase = 'confirm';
 	}
@@ -144,7 +141,7 @@
 	function addRow() {
 		editableItems = [
 			...editableItems,
-			{ name: '', price: 0, quantity: 1, unit: null, confidence: 'low', rawLine: '', categoryName: '' }
+			{ name: '', price: 0, quantity: 1, unit: null, confidence: 0, categoryName: '' }
 		];
 	}
 
@@ -155,6 +152,7 @@
 	// Derived cross-check: difference between sum of items and receipt total
 	const itemsSum = $derived(editableItems.reduce((s, i) => s + (Number(i.price) || 0), 0));
 	const totalMismatch = $derived(draft?.total != null && Math.abs(itemsSum - draft.total) > 0.02);
+	const lowConfCount = $derived(editableItems.filter((i) => i.confidence < 0.8 && i.confidence > 0).length);
 </script>
 
 <!-- ── Pick phase ─────────────────────────────────────────────────────────── -->
@@ -217,9 +215,9 @@
 			</label>
 		</div>
 
-		{#if draft.ocrConfidence < 70}
+		{#if lowConfCount > 0}
 			<div class="banner warn">
-				OCR confidence is low ({draft.ocrConfidence.toFixed(0)}%). Check items carefully — prices may be wrong.
+				{lowConfCount} item{lowConfCount > 1 ? 's' : ''} flagged with low recognition confidence (marked ⚠). Check prices before saving.
 			</div>
 		{/if}
 
@@ -233,10 +231,10 @@
 		<div class="card stack">
 			<h3>Items ({editableItems.length})</h3>
 			{#each editableItems as item, idx}
-				<div class="itemRow" class:lowConf={item.confidence === 'low'}>
+				<div class="itemRow" class:lowConf={item.confidence < 0.8 && item.confidence > 0}>
 					<div class="itemFields">
 						<label class="field">
-							<span>Product{item.confidence === 'low' ? ' ⚠' : ''}</span>
+							<span>Product{item.confidence > 0 && item.confidence < 0.8 ? ' ⚠' : ''}</span>
 							<input type="text" bind:value={item.name} />
 						</label>
 						<div class="row3">
