@@ -1,7 +1,10 @@
-import { Pool } from '@neondatabase/serverless';
+import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
+import ws from 'ws';
 import { env } from '$lib/server/env';
 import * as schema from '$lib/server/schema';
+
+neonConfig.webSocketConstructor = ws;
 
 const globalForDb = globalThis as unknown as {
 	pool: Pool | undefined;
